@@ -1,0 +1,16 @@
+[package]
+name = "borosGui"
+version = "0.1.0"
+authors = ["ldiaz"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+iui = { git = "https://github.com/rust-native-ui/libui-rs.git", branch="trunk" }
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.8"
+serialport = "3.3.0"
+regex = "1.4.1"
+lazy_static = "1.4.0"
+

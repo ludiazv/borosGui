@@ -1,0 +1,13 @@
+language: rust
+
+jobs:
+  include:
+    - os: linux
+      dist: xenial
+    - os: macos
+    - os: windows
+script:
+  - ls
+  - cargo build --release
+  - ls -R target
+

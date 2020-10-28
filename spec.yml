@@ -1,0 +1,60 @@
+---
+spec:
+    - signature: { product: BM , model: 24M  , version: 4 }
+      title: "Boros Met 24 with plain and mesh protocol v4"
+      sections:
+        - &GeneralMet
+          name: General settings
+          help: |
+            This tab configures general behavior prameters:
+              - Device ID: 16bit indentification of the sensor.
+              - Enable led: Blink the led during notification. set it on for visual feedback.
+              - Enable wake interrupt: Enable it if the sensor use external interrupt to start notification.
+              - Notification interval: Notification period in 8s steps. e.g: 15 = 2 minutes
+              - Payload template: template to build the payload (see docs for syntax)
+          items:
+            - Int:   { id: id  , caption: Device ID  , val: 1 , vmin: 0, vmax: 65536 }
+            - Check: { id: led , caption: Enable led , val: false }
+            - Check: { id: enint, caption: Enable wake interrupt, val: false }
+            - Int:   { id: repo, caption: Notification interval, val: 15, vmin: 0, vmax: 65536 }
+            - Text:  { id: tpl, caption: Payload template, val: "%Id,%Td,%Hd" , maxlen: 102 }
+        - &RF24Config
+          name: Radio configuration
+          help: |
+            This tab configure nrf24l01 configuration parameters:
+              - RF24 mode: Plain or Mesh mode
+              - Tx power: Radio output level (MIN,LOW,HIGH,MAX)
+              - Enable Lna: Enable amplification if the module supports it.
+              - Channel: radio chanel to use
+              - Data Rate: 250Kbps, 1Mbps, 2Mbps
+          items:
+              - Choice: { id: mode, caption: RF24 mode , val: 0 , values: [ {val: 0 , desc: Plain }, { val : 1, desc: Mesh} ] }
+              - Choice: { id: txp , caption: Tx power , val: 1 , values: [ {val: 0 , desc: Min }, {val: 1, desc: Low } , {val: 2, desc: High } , {val: 3, desc: Max } ] }
+              - Check:  { id: lna , caption: Enable Lna, val: false }
+              - Int:    { id: cha,  caption: Channel, val: 76, vmin: 1, vmax: 126 }
+              - Choice: { id: rate, caption: Data rate, val: 1, values: [ {val: 0, desc: 250Kbps}, {val: 1 , desc: 1Mbps },{val: 2, desc: 2Mbps } ] }
+        - &RF24Plain
+          name: Plain mode
+          help: |
+            Parameters on this tab apply only if 'plain' mode is selected:
+              - Pipe address size: Size of the destination pipe address.
+          items:
+            - Int: { id: psz, caption: Pipe address size, val: 5, vmin: 3, vmax: 5}
+
+
+ 
+ #   "Plain mode:\n"
+ #   "===========\n"
+ #   "psz  <3/4/5> - set pipe address size\n"
+ #   "pipe <hex>   - set hex destiantion pipe (LSB)\n"
+ #   "dsz  <0-32>  - set data/payload size\n"
+ #   "crc  <0/1/2> - set crc 0=disabled,1=8bit,2=16bit\n"
+ #   "ack  <0/1>   - Use autoack\n"
+ #   "retr <0-15>  - set number of tx retries\n"
+ #   "retd <0-15>  - set retries delay (n+1)*250us\n"
+ #   "Mesh mode:\n"
+ #   "==========\n"
+ #   "mnid <1-255> - set mesh node ID\n"
+ #   "mfid <0-255> - set mesh frame type\n"
+ #   "mdst <0-255> - set mesh node destination id\n"
+ #   "mfor <0/1>   - force mesh renew connection"
