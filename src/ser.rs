@@ -91,22 +91,21 @@ impl BorosSerial {
     
     }
 
+    pub fn get_config(&mut self) -> Result<Vec<(String,String)>> {
+        let (res,lines) = self.do_cmd("show")?;
+        let mut ret=vec!();
+        let re = Regex::new(r"^\[(.+)\].*:(.+)").unwrap();
+        if res {
+            for l in &lines {
+                println!("{}",l);
+                if let Some(cap) = re.captures(l) {
+                    ret.push((cap[1].into(),cap[2].into()));
+                }
+            }
+        }
+        Ok(ret)
+    }
+
 
 
 }
-
-/*
-    
-                
-
-        
-
-    def get_config(self,cmd='show'):
-        ok,attrs= self.do_cmd(cmd)
-        if not ok: raise Exception("can't retrieve configuration")
-        cnf={}
-        for a in attrs:
-            m= re.match(r'^\[(.+)\].*:(.+)',a)
-            if m is not None: cnf[m.group(1)]=m.group(2)
-        return cnf
-        */
