@@ -9,19 +9,21 @@ jobs:
           update: true
           packages:
             - libgtk-3-dev
+            - libudev-dev 
     - os: macos
     - os: windows
 script:
   - cargo build --release
   - ls -lh target/release
+
 deploy:
   provider: releases
-  api_key: 
-    secure: h1TUOrNR44F9kmB1dUHXs4xFHGRa6WyAqVkhr3PS4jzE/RpYZiejJlMZY9fyWAKKgQXZxdpiCYacKy3sS0ZYrFydu7Yi2EjrfgtMB4QwZhXwXcuPfym5UO5Ny3n2StwaGQRvu9p8FhAX51NzJBl107G6TWhK9DYsFqELjERRbfRsXo5HGUNSI2FgIL0nX3XvhSST4hXJ1/dNbGOA0uXMAYGOCcd/Nok2mMqLfcfgmqZYFanp/jH6+uBW2bxPr6BnTtSxkcehNZ4LHzd1zNa0pLh0jycqPKRMj8uW6wk4mo+OhDymqmqeuQJAksJ9awmXCLIg9JC+FtzI/3Za8o/aO6wDx0ebQH0t9VmcE5dcQkEF2iCc7yTwciVwIUbJ4SNcMW0nDGApczJkxesp4zmp+MfB77hZtAWL7XJ3vy+vd1UBoyKeqaWGGs3P7D1F0tEwSYdM3e+xLWmU5ai7c0sfeRw0vCJoBjlEXiphNNYJXxyShGPEo3aczmaD6oDdqKhFRvDMI7EibZHPneERuI0a5SOo84+bYzfrN1bVLjIxYlgj26rYLnyxdjP+K/3nlh6xwBLN18ykFQ60GdQlO15kOHpxtI1/+pZPl/mwXW1Mi+3qtvqx4K+h8E6AIw8rIOYvIygCH+inNtdiHdLaBuwukVwICVAJdQK90p3cyHfVwTI=%
+  skip_cleanup: true
+  api_key:
+   secure: WasxmH3+VS7gU3d6HkO+ZyjH9R4plpjH1D36M0wvlHwgFCyXQcRajxVPcOZ75gsC+DZzOzLDAL2BJZoKsTxzuTY8nBKlC/8cxBKAZ0T8ucu/QmYQwhp4lx1gu6rLHOqpxJYeREOT+JyD3j6mulNrX7qS9ayl44qIuWHICRl80JlH1GI3cgEZ0bYYZWtUd7pqWRG73R5rf4Zir1HebK/5ptWB3vIW21JnSkwG1UPif+jVpz9je73X6Xxml//bxyaLFi39AZC/NgOCE8DaFvT/OWRBWoR03vTuvgoMVVrHKQ/7ucPHOwDbvuooYabTKI6SNnFKzjJfg8fiRYMXSahh0nSNcDCXQO4Wusxo63g4DnvP4o9TpJI+n7X/QdxE9CiIScWG67MQKzCnJewSrCPReu1inKL9He/Y/HloSOH5uZQ5qU9SbY48gbYQqOv2ZYzSrbFpn8dL6XemMLIRvd5UzpsEYM0DZp8+amKNXIl5/5x8lLY84wKzlwVZ6kYUxWVkvKW6CnaKE+w+xazQx3d7cjb5O3MLIeCWHkXJuuwEtWtmBqUSIRpcmX9u7p+zNWpgY/W+RTYtXaOTITKGfUjbgkX/AA8mXl/Qnp7TnOotTp379NXsVnTE8bUE0imLxxEwSl+pMQHhIXvYa18OisDPUivQS611NR4Kp8mIvnaJVNw=
   file_glob: true
   file: target/release/boros_gui*
   skip_cleanup: true
   draft: true
-  prelease: true
-  name: "test release"
-  body: "test bodys"
+  prelease: false
+  name: "Draft to modify"
