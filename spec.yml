@@ -38,23 +38,30 @@ spec:
           help: |
             Parameters on this tab apply only if 'plain' mode is selected:
               - Pipe address size: Size of the destination pipe address.
+              - Notification pipe: Hex address to notify sensors readings.
+              - Payload size: Size of the fixed size payload. if 0 dynamic payload feature will be enabled.
+              - CRC: Enale CRC check mode.
+              - Enable Ack: Enable auto ack protocol of the nrf24l01 harware.
+              - Retries: 0-15 retry attempts (if ack is enabled)
+              - Retry delay: 0-15 Delay (n+1)*250us to wait before retry.
           items:
             - Int: { id: psz, caption: Pipe address size, val: 5, vmin: 3, vmax: 5}
-
-
- 
- #   "Plain mode:\n"
- #   "===========\n"
- #   "psz  <3/4/5> - set pipe address size\n"
- #   "pipe <hex>   - set hex destiantion pipe (LSB)\n"
- #   "dsz  <0-32>  - set data/payload size\n"
- #   "crc  <0/1/2> - set crc 0=disabled,1=8bit,2=16bit\n"
- #   "ack  <0/1>   - Use autoack\n"
- #   "retr <0-15>  - set number of tx retries\n"
- #   "retd <0-15>  - set retries delay (n+1)*250us\n"
- #   "Mesh mode:\n"
- #   "==========\n"
- #   "mnid <1-255> - set mesh node ID\n"
- #   "mfid <0-255> - set mesh frame type\n"
- #   "mdst <0-255> - set mesh node destination id\n"
- #   "mfor <0/1>   - force mesh renew connection"
+            - Hex: { id: pipe, caption: Notificaiton pipe, val: AABBCCDDEE , maxlen: 5 , lsb: true }
+            - Int: { id: dsz, caption: Payload size, val: 32 , vmin: 0, vmax: 32 }
+            - Choice: { id: crc, caption: CRC, val: 2 , values: [ {val: 0, desc: Disabled }, {val: 1, desc: 8bit}, {val: 2, desc: 16bit} ] }
+            - Check: { id: ack, caption: Enable Ack, val: true }
+            - Int: { id: retr , caption: Retries, val: 8, vmin: 0, vmax: 15 }
+            - Int: { id: retd , caption: Retry delay , val: 15, vmin: 0, vmax: 15 }
+        - &RF24Mesh
+          name: Mesh mode
+          help: |
+            Parameters on this tab apply only if 'mesh' mode is selected:
+              - Node ID: Mesh node id of the sensor
+              - Frame type: Mesh frame type id (byte)
+              - Notification node ID: Node in the mesh to notify sensor information.
+              - Force mesh renew: Force renew mesh network address in each notification.
+          items:
+              - Int: { id: mnid , caption: Node ID , val: 10, vmin: 1, vmax: 255 }
+              - Int: { id: mfid , caption: Frame type , val: 30, vmin: 0, vmax: 255 }
+              - Int: { id: mdst , caption: Notification node ID, val: 0, vmin: 0, vmax: 255 }
+              - Check: { id: mfor, caption: Force mesh renew, val: false }
