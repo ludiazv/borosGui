@@ -10,6 +10,7 @@ use editor::Editor;
 
 mod ser;
 mod editor;
+mod devices;
 
 pub enum Actions {
     OpenEditor(String),

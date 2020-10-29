@@ -6,10 +6,13 @@ use iui::controls::{Control, Spinbox,Entry,Combobox,Checkbox,
 
 use crate::ser::BorosSerial;
 use crate::Actions;
+use crate::devices::yml;
 use serde_yaml::{Result,from_str};
 use regex::Regex;
 
 use std::sync::mpsc::Sender;
+
+
 
 
 #[derive(Deserialize)]
@@ -254,7 +257,8 @@ pub struct Editor {
 
 impl Editor {
     pub fn new(ui : UI,cmd :Sender<Actions>) -> Result<Self> {
-        let str=std::fs::read_to_string("./spec.yml").unwrap();
+        #[cfg(debug_assertions)] let str=std::fs::read_to_string("./spec.yml").unwrap();
+        #[cfg(not(debug_assertions))] let str=String::from(yml);
         let r= from_str(str.as_str())?;
         let win= Window::new(&ui, "Config editor", 640, 380, WindowType::NoMenubar);
         let info=Label::new(&ui,"Ready");
