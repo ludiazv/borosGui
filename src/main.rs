@@ -1,4 +1,4 @@
-use serialport::{available_ports,open};
+use serialport::{available_ports,open,SerialPortType,UsbPortInfo};
 use std::sync::mpsc::channel;
 
 extern crate iui;
@@ -33,23 +33,33 @@ fn main() {
 
      // Layout & group for select window
      let mut vbox = VerticalBox::new(&ui);
-     //vbox.set_padded(&ui, true);
+     vbox.set_padded(&ui, true);
      let mut device_combo= Combobox::new(&ui);
      let ports=available_ports().unwrap();
+     
      for i in ports.iter() {
          device_combo.append(&ui,&i.port_name);
      }
     
-    let info= Label::new(&ui,"");
+    let info= Label::new(&ui,"Select serial interface");
     let mut progress = ProgressBar::indeterminate(&ui);
     progress.hide(&ui);
 
     device_combo.on_selected(&ui, {
         let ui=ui.clone();
         let mut inf=info.clone();
+        let p=ports.clone();
         move |i| {
             if i>=0 {
-                inf.set_text(&ui,"Todo show info");
+                let s:String=match &p[i as usize].port_type {
+                    SerialPortType::BluetoothPort => "Bluetooth interface".into(),
+                    SerialPortType::PciPort => "Pci interface".into(),
+                    SerialPortType::Unknown => "Unknown interface ".into(),
+                    SerialPortType::UsbPort(UsbPortInfo { manufacturer, product , ..}) => {
+                        format!("USB Vendor:{},Product:{}",manufacturer.as_ref().unwrap_or(&"#".to_string()),product.as_ref().unwrap_or(&"#".to_string()))
+                    }
+                };
+                inf.set_text(&ui,&s);
             }
         }
     });
@@ -58,13 +68,11 @@ fn main() {
     }
 
     let mut group_hbox = HorizontalBox::new(&ui);
-    //let mut group = Group::new(&ui, "");
     let mut but_go = Button::new(&ui,"Go!");
     but_go.on_clicked(&ui, {
         let ui = ui.clone();
         let dc=device_combo.clone();
         let w=w_select.clone();
-        let mut pb=progress.clone();
 
         move |_| {
             let n=dc.selected(&ui);
@@ -125,7 +133,9 @@ fn main() {
                     Actions::PBShow => pb.show(&ui),
                     Actions::EditorInfo(s) => editor.editor_info(&s),
                     Actions::Reset  => editor.reset(),
-                    _ => {}
+                    Actions::ReadConfig => editor.read_config(),
+                    Actions::SaveConfig => editor.save_config(),
+                    //_ => {}
                 }
             }
         }

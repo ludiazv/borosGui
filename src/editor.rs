@@ -11,6 +11,7 @@ use regex::Regex;
 
 use std::sync::mpsc::Sender;
 
+
 #[derive(Deserialize)]
 pub struct Root {
     spec: Vec<Device>,
@@ -21,6 +22,16 @@ pub struct Device {
     signature: Signature,
     title: String,
     sections: Vec<Section>,
+}
+
+impl Device {
+    pub fn find(&mut self, id: &str) -> Option<&mut ConfItem> {
+        for s in &mut self.sections {
+            let f=s.find(id);
+            if f.is_some() { return f }
+        }
+        None
+    }
 }
 
 #[derive(Deserialize,Debug)]
@@ -53,11 +64,17 @@ pub struct Section {
     items: Vec<ConfItem>
 }
 
+impl Section {
+    pub fn find(&mut self, s:&str) -> Option<&mut ConfItem> {
+        let f=self.items.iter_mut().find( |e| e.is(s));
+        f
+    }
+}
 
 #[derive(Deserialize)]
 pub struct Choice {
-    val: i32,
-    desc: String,
+    pub val: i32,
+    pub desc: String,
 }
 
 #[derive(Deserialize)]
@@ -85,17 +102,44 @@ pub enum ConfItem {
 }
 
 impl ConfItem {
-    pub fn validate(&self,ui:&UI) -> bool {
+    pub fn is(&self,wid:&str) -> bool {
         match self {
-            ConfItem::Check { .. } => true,
-            ConfItem::Int {  .. } => true, 
-            ConfItem::Choice { control:Some(c), .. } => c.selected(ui) >=0 ,
-            ConfItem::Text { control:Some(c), maxlen: ml , .. } => c.value(ui).len() <= *ml ,
-            ConfItem::Hex { control: Some(c), maxlen: ml, ..} => {
-                false // TODO
-            },
-            _ => false   
+            ConfItem::Check { id , .. } |
+            ConfItem::Int { id , .. } |
+            ConfItem::Hex { id, .. } |
+            ConfItem::Choice { id, .. } |
+            ConfItem::Text { id , .. } => id==wid
         }
+    }
+
+    pub fn validate(&self,ui:&UI) -> (bool,&String) {
+        match self {
+            ConfItem::Check { caption, .. } => (true,caption),
+            ConfItem::Int { caption, .. } => (true,caption),
+            ConfItem::Choice { control:Some(c), caption , .. } => (c.selected(ui) >=0,caption) ,
+            ConfItem::Text { control:Some(c), maxlen: ml , caption, .. } => (c.value(ui).len() <= *ml , caption) ,
+            ConfItem::Hex { control: Some(c), maxlen: ml, caption, ..} => {
+                let v= c.value(ui);
+                //println!("v:{} , len:{}",v,v.len());
+                ( (v.len() <= (2*ml) && ConfItem::is_hex(&v)) , caption)
+            },
+            ConfItem::Text { control:None , caption, .. } |
+            ConfItem::Hex { control:None , caption, .. } |
+            ConfItem::Choice { control:None , caption, .. }  => (false,caption)
+
+        }
+    }
+    
+    fn  is_hex(s:&str) -> bool {
+        let re = Regex::new(r"[0123456789abcdefABCDEF]").unwrap();
+        //println!("slen {} count {}", s.len() , re.find_iter(s).count() );
+        s.len() >0 && s.len() % 2 == 0 && re.find_iter(s).count() == s.len()
+    }
+    fn invert(s:&str) -> String {
+        let re = Regex::new(r"[0123456789abcdefABCDEF][0123456789abcdefABCDEF]").unwrap();
+        let mut x :Vec<&str>=re.find_iter(s).map(|x| { x.as_str() }).collect();
+        x.reverse();
+        x.join("")
     }
 
     pub fn from_device(&mut self,ui:&UI,v:&str) {
@@ -106,13 +150,16 @@ impl ConfItem {
                 c.set_value(ui,v);
             },
             ConfItem::Choice { control: Some(c), values:options, val:def, .. } => {
-                let idx=v.parse::<usize>().unwrap_or(*def);
-                if idx < options.len() { c.set_selected(ui,idx as i32); }
+                let vp=v.parse::<i32>().unwrap_or(0);
+                let idx=options.iter().position( |o| o.val==vp ).unwrap_or(*def);
+                c.set_selected(ui,idx as i32); 
             },
             ConfItem::Text { control: Some(c), .. } => c.set_value(ui,v),
             ConfItem::Hex  { control: Some(c), lsb: l, ..} => {
-                if ! *l {
-                    c.set_value(ui,v);
+                if *l { 
+                    c.set_value(ui,ConfItem::invert(v).as_str()) 
+                } else { 
+                    c.set_value(ui,v)
                 }
             }
             _ => { }
@@ -120,7 +167,24 @@ impl ConfItem {
     }
 
     pub fn to_device(&self,ui:&UI) -> String {
-        String::from("todo")
+        match self {
+            ConfItem::Check { control:Some(c), id, .. } => { 
+                let v= if c.checked(ui) { "1" } else { "0" };
+                format!("{} {}",id,v)
+            },
+            ConfItem::Int { control:Some(c), id,  .. } => format!("{} {}",id,c.value(ui)),
+            ConfItem::Hex { control:Some(c), lsb: l, id,  .. } => {
+                let mut v=c.value(ui);
+                if *l { v= ConfItem::invert(&v) }
+                format!("{} {}",id,v)
+            },
+            ConfItem::Text   { control:Some(c), id,  .. } => format!("{} {}",id,c.value(ui)),
+            ConfItem::Choice { control:Some(c), values:v,  id, .. } => {
+                let idx = c.selected(ui);
+                format!("{} {}",id,v[idx as usize].val)
+            },
+            _ => "".into()  
+        }
     }
 
     pub fn build_control(&mut self,ui:&UI) -> HorizontalBox {
@@ -164,17 +228,18 @@ impl ConfItem {
                *c=Some(con);
                (cap,rcon.into())
            },
-            _ => { ("",HorizontalSeparator::new(ui).into())}
+            //_ => ( "",HorizontalSeparator::new(ui).into() )
         };
+
         if caption != ""  {
-            hb.append(ui,Label::new(ui,caption),LayoutStrategy::Stretchy);
+            hb.append(ui,Label::new(ui,caption),LayoutStrategy::Compact);
         }
         hb.append(ui,control,LayoutStrategy::Stretchy);
+        hb.set_padded(ui,true);
         hb
     }
-    
-}
 
+}    
 
 pub struct Editor {
     root: Root,
@@ -189,10 +254,6 @@ pub struct Editor {
 
 impl Editor {
     pub fn new(ui : UI,cmd :Sender<Actions>) -> Result<Self> {
-        let re=Regex::new(r"[0123456789abcdef][0123456789abcdef]").unwrap();
-        let mut x :Vec<&str>=re.find_iter("12abcc").map(|x| { x.as_str() }).collect();
-        x.reverse();
-        println!("{:?}",x.join(""));
         let str=std::fs::read_to_string("./spec.yml").unwrap();
         let r= from_str(str.as_str())?;
         let win= Window::new(&ui, "Config editor", 640, 380, WindowType::NoMenubar);
@@ -245,13 +306,44 @@ impl Editor {
     }
     pub fn read_config(&mut self) {
         if let Some(ser) = &mut self.serial {
-            let (ok,lines) = ser.do_cmd("show").unwrap_or((false,vec!()));
-            if ok {
-                for l in &lines {
-                    
+            
+            if let Ok(config) = ser.get_config() {
+                for (id,val) in config {
+                    if let Some(item)=self.root.spec[self.aspec].find(id.as_str()) {
+                        item.from_device(&self.ui, val.as_str())
+                    }
                 }
+                self.editor_info("Config readed from device!");
+            } else {
+                self.editor_info("Failed to read configuration from device");
             }
         }
+    }
+
+    pub fn save_config(&mut self) {
+        if let Some(ser) = &mut self.serial {
+            for sec in &self.root.spec[self.aspec].sections {
+                for item in sec.items.iter() {
+                    let (valid,caption) = item.validate(&self.ui);
+                    if valid {
+                        let ser_cmd=item.to_device(&self.ui);
+                        if ser.do_cmd(&ser_cmd).is_err() {
+                            let msg=format!("The field '{}' in tab '{}' can't be written into the device",caption,sec.name);
+                            self.win.modal_err(&self.ui,"Field invalid",msg.as_str());
+                            self.editor_info("¡¡¡ Error writing cofiguration");
+                            return;
+                        }
+                    } else {
+                        let msg=format!("The field '{}' in tab '{}' is not valid. Check format and length.",caption,sec.name);
+                        self.win.modal_err(&self.ui,"Field invalid",msg.as_str());
+                        self.editor_info("¡¡¡ Invalid fields");
+                        return;
+                    }
+                }
+            }
+            self.editor_info("Config written to device!");
+        }
+
     }
 
     pub fn show(&mut self,n: usize) {
@@ -311,6 +403,20 @@ impl Editor {
                 let _=c.send(Actions::ReadConfig);
             }
         });
+        read.on_clicked(ui, {
+            let c=self.cmd.clone();
+            move |_| {
+                let _=c.send(Actions::EditorInfo("Reading config...".into()));
+                let _=c.send(Actions::ReadConfig);
+            }
+        });
+        write.on_clicked(ui, {
+          let c=self.cmd.clone();
+          move |_| {
+              let _=c.send(Actions::EditorInfo("Writing configuration..".into()));
+              let _=c.send(Actions::SaveConfig);
+          }
+        });
 
         bbox.append(ui,quit,LayoutStrategy::Compact);
         bbox.append(ui,reset,LayoutStrategy::Compact);
@@ -322,7 +428,8 @@ impl Editor {
 
         self.win.set_child(ui,vbox);
         self.win.show(ui);
-
+        let _=self.cmd.send(Actions::EditorInfo("Reading config...".into()));
+        let _ =self.cmd.send(Actions::ReadConfig);
     }
 
 }
