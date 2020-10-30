@@ -27,7 +27,7 @@ script:
 before_deploy:
   - if [ "$TRAVIS_OS_NAME" = "osx"   ]; then 7z a -tzip -mx9 $RELEASE_PKG target/release/boros_gui ; fi
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then gzip -c -9 target/release/boros_gui > $RELEASE_PKG ; fi
-  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then 7z a -tzip -mx9 $RELEASE_PKG target/release/boros_gui ; fi
+  - if [ "$TRAVIS_OS_NAME" = "windows" ]; then 7z a -tzip -mx9 $RELEASE_PKG target/release/boros_gui.exe ; fi
 
 deploy:
   provider: releases
